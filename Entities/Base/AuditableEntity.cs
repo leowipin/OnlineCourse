@@ -1,5 +1,3 @@
-using OnlineCourse.Interfaces;
-
 namespace OnlineCourse.Entities.Base
 {
     public abstract class AuditableEntity : IAuditableEntity

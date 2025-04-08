@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Identity;
-using OnlineCourse.Interfaces;
+using OnlineCourse.Entities.Base;
 
 namespace OnlineCourse.Entities
 {

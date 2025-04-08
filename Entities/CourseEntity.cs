@@ -10,13 +10,15 @@ namespace OnlineCourse.Entities
         public string Description { get; set; } = string.Empty;
         public decimal Price { get; set; }
         public DateTime? PublishedDate { get; set; }
-        public CourseLevels Level { get; set; }
         // foreign keys
         public Guid InstructorProfileId { get; set; }
+        public Guid CourseLevelId { get; set; }
         // nav property
         public InstructorProfile Instructor { get; set; } = null!;
         public ICollection<CourseTag> CourseTags { get; set; } = new List<CourseTag>();
         public ICollection<Module> Modules { get; set; } = new List<Module>();
         public ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
+        public CourseLevel CourseLevel { get; set; } = null!;
+
     }
 }

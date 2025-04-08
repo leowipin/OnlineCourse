@@ -31,6 +31,7 @@ namespace OnlineCourse
             builder.ApplyConfiguration(new ModuleConfig());
             builder.ApplyConfiguration(new StudentConfig());
             builder.ApplyConfiguration(new UserConfig());
+            builder.ApplyConfiguration(new CourseLevelConfig());
 
             // Global DeletedAt filter
             foreach(var entityType in builder.Model.GetEntityTypes())
