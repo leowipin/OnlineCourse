@@ -5,7 +5,7 @@ namespace OnlineCourse.Entities
     public class Module : AuditableEntity
     {
         public Guid Id { get; set; }
-        public string Title { get; set; } = string.Empty;
+        public string Title { get; set; } = null!;
         public byte Order { get; set; }
         // foreing Keys
         public Guid CourseId { get; set; }

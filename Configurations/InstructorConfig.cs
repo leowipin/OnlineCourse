@@ -4,9 +4,9 @@ using OnlineCourse.Entities;
 
 namespace OnlineCourse.Configurations
 {
-    public class InstructorConfig : IEntityTypeConfiguration<InstructorProfile>
+    public class InstructorConfig : IEntityTypeConfiguration<Instructor>
     {
-        public void Configure(EntityTypeBuilder<InstructorProfile> builder)
+        public void Configure(EntityTypeBuilder<Instructor> builder)
         {
             // Table name
             builder.ToTable("InstructorProfiles");

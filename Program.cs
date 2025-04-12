@@ -1,7 +1,12 @@
+using System.Reflection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using OnlineCourse;
 using OnlineCourse.Entities;
+using OnlineCourse.Repositories;
+using OnlineCourse.Repositories.IRepositories;
+using OnlineCourse.Services;
+using OnlineCourse.Services.IServices;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,12 +14,15 @@ builder.Services.AddControllers();
 builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<ApplicationDbContext>(options => options
     .UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-builder.Services.AddIdentity<User, IdentityRole<Guid>>(options =>
-{
-    options.User.RequireUniqueEmail = true;
-})
+
+builder.Services.AddIdentity<User, IdentityRole<Guid>>()
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultTokenProviders();
+
+builder.Services.AddAutoMapper((Assembly.GetExecutingAssembly()));
+
+builder.Services.AddScoped<IInstructorRepository, InstructorRepository>();
+builder.Services.AddScoped<IInstructorService, InstructorService>();
 
 var app = builder.Build();
 

@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Identity;
-using OnlineCourse.Entities.Base;
+using OnlineCourse.Interfaces;
 
 namespace OnlineCourse.Entities
 {
@@ -11,6 +11,6 @@ namespace OnlineCourse.Entities
         public DateTime? DeletedAt { get; set; }
         // nav properties
         public Student? Student { get; set; } = null!;
-        public InstructorProfile? Instructor { get; set; } = null!;
+        public Instructor? Instructor { get; set; } = null!;
     }
 }

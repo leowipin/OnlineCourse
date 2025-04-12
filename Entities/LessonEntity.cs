@@ -5,9 +5,9 @@ namespace OnlineCourse.Entities
     public class Lesson : AuditableEntity
     {
         public Guid Id { get; set; }
-        public string Title { get; set; } = string.Empty;
+        public string Title { get; set; } = null!;
         public string? VideorUrl { get; set; }
-        public string Content { get; set; } = string.Empty;
+        public string Content { get; set; } = null!;
         public int DurationSeconds { get; set; }
         public byte Order { get; set; }
         // foreign key

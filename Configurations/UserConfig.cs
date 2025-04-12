@@ -19,7 +19,7 @@ namespace OnlineCourse.Configurations
                 .OnDelete(DeleteBehavior.Restrict);
             builder.HasOne(u => u.Instructor)
                 .WithOne(i => i.User)
-                .HasForeignKey<InstructorProfile>(i=>i.Id)
+                .HasForeignKey<Instructor>(i=>i.Id)
                 .OnDelete(DeleteBehavior.Restrict);
         }
     }

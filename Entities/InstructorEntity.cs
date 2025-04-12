@@ -2,7 +2,7 @@ using OnlineCourse.Entities.Base;
 
 namespace OnlineCourse.Entities
 {
-    public class InstructorProfile : AuditableEntity
+    public class Instructor : AuditableEntity
     {
         public Guid Id { get; set; }
         public string? Biography { get; set; }

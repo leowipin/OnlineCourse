@@ -11,6 +11,16 @@ namespace OnlineCourse
     public class ApplicationDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) :base(options) { }
+        
+        public DbSet<Student> Students { get; set; }
+        public DbSet<Instructor> Instructors { get; set; }
+        public DbSet<Course> Courses { get; set; }
+        public DbSet<Enrollment> Enrollments { get; set; }
+        public DbSet<Lesson> Lessons { get; set; }
+        public DbSet<Module> Modules { get; set; }
+        public DbSet<CourseTag> CourseTags { get; set; }
+        public DbSet<CourseLevel> CourseLevels { get; set; }
+        
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
@@ -39,7 +49,7 @@ namespace OnlineCourse
                 if (entityType.ClrType.IsAssignableFrom(typeof(IAuditableEntity))
                     && typeof(User) != entityType.ClrType
                     && typeof(Student) != entityType.ClrType
-                    && typeof(InstructorProfile) != entityType.ClrType) 
+                    && typeof(Instructor) != entityType.ClrType) 
                 {
                     var parameter = Expression.Parameter(entityType.ClrType, "e");
                     var property = Expression.Property(parameter, "DeletedAt");
@@ -68,7 +78,7 @@ namespace OnlineCourse
             UpdateAuditFields();
             return base.SaveChanges();
         }
-        public override Task<int> SaveChangesAsync(CancellationToken cancellationToken)
+        public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
             UpdateAuditFields();
             return base.SaveChangesAsync(cancellationToken);
