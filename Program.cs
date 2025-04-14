@@ -7,6 +7,7 @@ using OnlineCourse.Repositories;
 using OnlineCourse.Repositories.IRepositories;
 using OnlineCourse.Services;
 using OnlineCourse.Services.IServices;
+using OnlineCourse.UnitOfWork;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,7 +22,8 @@ builder.Services.AddIdentity<User, IdentityRole<Guid>>()
 
 builder.Services.AddAutoMapper((Assembly.GetExecutingAssembly()));
 
-builder.Services.AddScoped<IInstructorRepository, InstructorRepository>();
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+// Services
 builder.Services.AddScoped<IInstructorService, InstructorService>();
 
 var app = builder.Build();

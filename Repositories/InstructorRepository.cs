@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using OnlineCourse.Entities;
 using OnlineCourse.Repositories.IRepositories;
 
@@ -6,7 +7,7 @@ namespace OnlineCourse.Repositories
     public class InstructorRepository(ApplicationDbContext context) : IInstructorRepository
     {
         private readonly ApplicationDbContext _context = context;
-        public async Task AddAsync(Instructor instructor)
+        public async Task AddAsync(Instructor instructor, CancellationToken cancellationToken = default)
         {
             await _context.Instructors.AddAsync(instructor);
         }
@@ -14,9 +15,10 @@ namespace OnlineCourse.Repositories
         {
             await _context.SaveChangesAsync(cancellationToken);
         }
-        public IQueryable<Instructor> GetInstructorByIdQueryable(Guid id)
+        public async Task<Instructor?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
         {
-            return _context.Instructors.Where(i=>i.Id == id).AsQueryable();
+            return await _context.Instructors
+                .FirstOrDefaultAsync(i => i.Id == id, cancellationToken);
         }
     }
 }

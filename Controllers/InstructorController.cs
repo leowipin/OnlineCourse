@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using OnlineCourse.Dtos;
+using OnlineCourse.Exceptions;
 using OnlineCourse.Services.IServices;
 
 namespace OnlineCourse.Controllers
@@ -11,26 +12,32 @@ namespace OnlineCourse.Controllers
         private readonly IInstructorService _instructorService = instructorService;
 
         [HttpPost]
-        public async Task<ActionResult> InstructorCreate(
-            [FromBody] InstructorCreationDto instructorCreation)
+        [ProducesResponseType<InstructorDto>(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<InstructorDto>> InstructorCreate(
+            [FromBody] InstructorCreationDto instructorCreation,
+            CancellationToken cancellationToken)
         {
             try
             {
                 InstructorDto instructorDto = await _instructorService
-                .CreateInstructorAsync(instructorCreation);
+                .CreateInstructorAsync(instructorCreation, cancellationToken);
                 return CreatedAtAction(nameof(InstructorGet), new { id = instructorDto.Id }, instructorDto);
             }
-            //1 crear la excepcion de identity
+            catch (UserCreationException uce)
+            {
+                return BadRequest(new { errors=uce.IdentityErrors, message=uce.Message });
+            }
             catch (Exception ex)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError, new { error = ex.Message });
             }
-
         }
         [HttpGet("{id}")]
-        public async Task<ActionResult<InstructorDto>> InstructorGet(Guid id)
+        public async Task<ActionResult<InstructorDto>> InstructorGet(Guid id, CancellationToken cancellationToken)
         {
-            var instructorDto = await _instructorService.GetInstructorByIdAsync(id);
+            var instructorDto = await _instructorService.GetInstructorByIdAsync(id, cancellationToken);
             if(instructorDto == null) return NotFound();
             return Ok(instructorDto);
         }
