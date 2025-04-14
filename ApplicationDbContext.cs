@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using OnlineCourse.Configurations;
 using OnlineCourse.Entities;
-using OnlineCourse.Interfaces;
+using OnlineCourse.Entities.Base;
 
 namespace OnlineCourse
 {
@@ -78,10 +78,10 @@ namespace OnlineCourse
             UpdateAuditFields();
             return base.SaveChanges();
         }
-        public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        public override Task<int> SaveChangesAsync(CancellationToken ct = default)
         {
             UpdateAuditFields();
-            return base.SaveChangesAsync(cancellationToken);
+            return base.SaveChangesAsync(ct);
         }
         public void UpdateAuditFields()
         {

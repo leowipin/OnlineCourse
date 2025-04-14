@@ -3,8 +3,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using OnlineCourse;
 using OnlineCourse.Entities;
-using OnlineCourse.Repositories;
-using OnlineCourse.Repositories.IRepositories;
 using OnlineCourse.Services;
 using OnlineCourse.Services.IServices;
 using OnlineCourse.UnitOfWork;
@@ -16,7 +14,10 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<ApplicationDbContext>(options => options
     .UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-builder.Services.AddIdentity<User, IdentityRole<Guid>>()
+builder.Services.AddIdentity<User, IdentityRole<Guid>>(options =>
+{
+    options.Password.RequiredLength = 8;
+})
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultTokenProviders();
 

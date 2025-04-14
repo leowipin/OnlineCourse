@@ -1,4 +1,4 @@
-namespace OnlineCourse.Interfaces
+namespace OnlineCourse.Entities.Base
 {
     public interface IAuditableEntity
     {

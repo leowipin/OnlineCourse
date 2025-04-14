@@ -1,5 +1,4 @@
 using OnlineCourse.Entities.Base;
-using OnlineCourse.Enums;
 
 namespace OnlineCourse.Entities
 {

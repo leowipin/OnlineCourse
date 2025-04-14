@@ -1,12 +1,8 @@
-using System.Transactions;
 using AutoMapper;
-using AutoMapper.QueryableExtensions;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using OnlineCourse.Dtos;
 using OnlineCourse.Entities;
 using OnlineCourse.Exceptions;
-using OnlineCourse.Repositories.IRepositories;
 using OnlineCourse.Services.IServices;
 using OnlineCourse.UnitOfWork;
 
@@ -21,53 +17,31 @@ namespace OnlineCourse.Services
 
         public async Task<InstructorDto> CreateInstructorAsync(
             InstructorCreationDto instructorCreationDto,
-            CancellationToken cancellationToken = default) 
+            CancellationToken ct = default) 
         {
-            await using var transaction = await _unitOfWork.BeginTransactionAsync(cancellationToken);
+            await using var transaction = await _unitOfWork.BeginTransactionAsync(ct);
             
             var userMapped = _mapper.Map<User>(instructorCreationDto);
             var userResult = await _userManager.CreateAsync(userMapped, instructorCreationDto.Password);
-            if (userResult.Succeeded) throw new UserCreationException(userResult.Errors);
-            
+            if (!userResult.Succeeded)
+            {
+                string errorTitle = "Error al crear el usuario.";
+                throw new UserCreationException(userResult.Errors, errorTitle);
+            }
             var instructorMapped = _mapper.Map<Instructor>(instructorCreationDto);
             instructorMapped.User = userMapped;
 
-            await _unitOfWork.Instructors.AddAsync(instructorMapped, cancellationToken);
-            await _unitOfWork.CompleteAsync(cancellationToken);
-            await transaction.CommitAsync(cancellationToken);
+            await _unitOfWork.Instructors.AddAsync(instructorMapped, ct);
+            await _unitOfWork.CompleteAsync(ct);
+            await transaction.CommitAsync(ct);
 
             return _mapper.Map<InstructorDto>(instructorMapped);
-
-
-
-
-
-
-
-
-
-
-
-            //using var transaction = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
-            //var userMapped = _mapper.Map<User>(instructorCreationDto);
-            //var userCreatedResult = await _userManager.CreateAsync(userMapped, instructorCreationDto.Password);
-            //if (!userCreatedResult.Succeeded) throw new UserCreationException(userCreatedResult.Errors);
-
-            //var instructorMapped = _mapper.Map<Instructor>(instructorCreationDto);
-            //instructorMapped.User = userMapped;
-
-            //await _instructorRepository.AddAsync(instructorMapped);
-            //await _instructorRepository.SaveChangeAsync();
-
-            //transaction.Complete();
-
-            //return _mapper.Map<InstructorDto>(instructorMapped);
         }
         public async Task<InstructorDto?> GetInstructorByIdAsync(
             Guid id, 
-            CancellationToken cancellationToken = default)
+            CancellationToken ct = default)
         {
-            var instructor = await _unitOfWork.Instructors.GetByIdAsync(id);
+            var instructor = await _unitOfWork.Instructors.GetByIdAsync(id, ct);
             if (instructor == null) return null;
             return _mapper.Map<InstructorDto>(instructor);
         }
