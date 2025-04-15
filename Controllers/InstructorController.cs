@@ -11,6 +11,15 @@ namespace OnlineCourse.Controllers
     {
         private readonly IInstructorService _instructorService = instructorService;
 
+        /// <summary>
+        /// Crea un nuevo instructor.
+        /// </summary>
+        /// <param name="instructorCreation">Datos necesarios para la creación del instructor.</param>
+        /// <param name="ct">Token de cancelación.</param>
+        /// <returns>El instructor creado.</returns>
+        /// <response code="201">Instructor creado exitosamente.</response>
+        /// <response code="400">Error en los datos proporcionados para la creación del instructor.</response>
+        /// <response code="500">Error interno del servidor.</response>
         [HttpPost]
         [ProducesResponseType<InstructorDto>(StatusCodes.Status201Created)]
         [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
@@ -47,6 +56,16 @@ namespace OnlineCourse.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, problemDetails);
             }
         }
+
+        /// <summary>
+        /// Obtiene un instructor por su identificador.
+        /// </summary>
+        /// <param name="id">Identificador único del instructor.</param>
+        /// <param name="ct">Token de cancelación.</param>
+        /// <returns>El instructor solicitado.</returns>
+        /// <response code="200">Instructor encontrado exitosamente.</response>
+        /// <response code="404">No se encontró un instructor con el identificador proporcionado.</response>
+        /// <response code="500">Error interno del servidor.</response>
         [HttpGet("{id}")]
         [ProducesResponseType<InstructorDto>(StatusCodes.Status200OK)]
         [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
@@ -54,7 +73,7 @@ namespace OnlineCourse.Controllers
         public async Task<ActionResult<InstructorDto>> InstructorGet(Guid id, CancellationToken ct)
         {
             var instructorDto = await _instructorService.GetInstructorByIdAsync(id, ct);
-            if(instructorDto == null)
+            if (instructorDto == null)
             {
                 var problemDetails = new ProblemDetails
                 {
@@ -64,7 +83,6 @@ namespace OnlineCourse.Controllers
                 };
                 return NotFound(problemDetails);
             }
-            ;
             return Ok(instructorDto);
         }
     }

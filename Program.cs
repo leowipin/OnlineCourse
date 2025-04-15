@@ -1,6 +1,7 @@
 using System.Reflection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
 using OnlineCourse;
 using OnlineCourse.Entities;
 using OnlineCourse.Services;
@@ -10,7 +11,15 @@ using OnlineCourse.UnitOfWork;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo { Title = "Online Course API", Version = "v1" });
+
+    // Ruta del archivo XML de comentarios
+    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    options.IncludeXmlComments(xmlPath);
+});
 builder.Services.AddDbContext<ApplicationDbContext>(options => options
     .UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
