@@ -1,15 +1,17 @@
 using Microsoft.AspNetCore.Mvc;
 using OnlineCourse.Dtos;
 using OnlineCourse.Exceptions;
+using OnlineCourse.Extensions.Logging;
 using OnlineCourse.Services.IServices;
 
 namespace OnlineCourse.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class InstructorController(IInstructorService instructorService) : ControllerBase
+    public class InstructorController(IInstructorService instructorService, ILogger<InstructorController> logger) : ControllerBase
     {
         private readonly IInstructorService _instructorService = instructorService;
+        private readonly ILogger<InstructorController> _logger = logger;
 
         /// <summary>
         /// Crea un nuevo instructor.
@@ -33,9 +35,12 @@ namespace OnlineCourse.Controllers
                 InstructorDto instructorDto = await _instructorService
                     .CreateInstructorAsync(instructorCreation, ct);
                 return CreatedAtAction(nameof(InstructorGet), new { id = instructorDto.Id }, instructorDto);
+                
             }
             catch (UserCreationException uce)
             {
+                _logger.LogUserCreationWarning(uce, nameof(InstructorCreate));
+
                 var problemDetails = new ProblemDetails
                 {
                     Status = StatusCodes.Status400BadRequest,
@@ -44,16 +49,6 @@ namespace OnlineCourse.Controllers
                 };
                 problemDetails.Extensions.Add("identityErrors", uce.IdentityErrors);
                 return BadRequest(problemDetails);
-            }
-            catch (Exception)
-            {
-                var problemDetails = new ProblemDetails
-                {
-                    Status = StatusCodes.Status500InternalServerError,
-                    Title = "Error interno del servidor.",
-                    Detail = "Ocurrió un error inesperado. Por favor, intenta nuevamente más tarde."
-                };
-                return StatusCode(StatusCodes.Status500InternalServerError, problemDetails);
             }
         }
 

@@ -20,22 +20,29 @@ namespace OnlineCourse.Services
             CancellationToken ct = default) 
         {
             await using var transaction = await _unitOfWork.BeginTransactionAsync(ct);
-            
-            var userMapped = _mapper.Map<User>(instructorCreationDto);
-            var userResult = await _userManager.CreateAsync(userMapped, instructorCreationDto.Password);
-            if (!userResult.Succeeded)
+            try
             {
-                string errorTitle = "Error al crear el usuario.";
-                throw new UserCreationException(userResult.Errors, errorTitle);
+                var userMapped = _mapper.Map<User>(instructorCreationDto);
+                var userResult = await _userManager.CreateAsync(userMapped, instructorCreationDto.Password);
+                if (!userResult.Succeeded)
+                {
+                    string errorTitle = "Error al crear el usuario.";
+                    throw new UserCreationException(userResult.Errors, errorTitle);
+                }
+                var instructorMapped = _mapper.Map<Instructor>(instructorCreationDto);
+                instructorMapped.User = userMapped;
+
+                await _unitOfWork.Instructors.AddAsync(instructorMapped, ct);
+                await _unitOfWork.CompleteAsync(ct);
+                await transaction.CommitAsync(ct);
+
+                return _mapper.Map<InstructorDto>(instructorMapped);
             }
-            var instructorMapped = _mapper.Map<Instructor>(instructorCreationDto);
-            instructorMapped.User = userMapped;
-
-            await _unitOfWork.Instructors.AddAsync(instructorMapped, ct);
-            await _unitOfWork.CompleteAsync(ct);
-            await transaction.CommitAsync(ct);
-
-            return _mapper.Map<InstructorDto>(instructorMapped);
+            catch (Exception) 
+            {
+                await transaction.RollbackAsync(ct);
+                throw;
+            }
         }
         public async Task<InstructorDto?> GetInstructorByIdAsync(
             Guid id, 
