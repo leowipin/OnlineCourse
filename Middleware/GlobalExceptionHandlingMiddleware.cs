@@ -31,11 +31,6 @@ public class ExceptionHandlingMiddleware(
         }
     }
 
-    /// <summary>
-    /// Maneja la excepción y configura la respuesta HTTP.
-    /// </summary>
-    /// <param name="context">El contexto HTTP.</param>
-    /// <param name="exception">La excepción ocurrida.</param>
     private async Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
         context.Response.ContentType = "application/problem+json"; // Usar el tipo de contenido para ProblemDetails
