@@ -1,5 +1,6 @@
 using AutoMapper;
 using Microsoft.AspNetCore.Identity;
+using OnlineCourse.Data.Constants;
 using OnlineCourse.Dtos;
 using OnlineCourse.Entities;
 using OnlineCourse.Exceptions;
@@ -29,6 +30,9 @@ namespace OnlineCourse.Services
                     string errorTitle = "Error al crear el usuario.";
                     throw new UserCreationException(userResult.Errors, errorTitle);
                 }
+                
+                var roleResult = await _userManager.AddToRoleAsync(userMapped, AppRoles.Instructor);
+                
                 var instructorMapped = _mapper.Map<Instructor>(instructorCreationDto);
                 instructorMapped.User = userMapped;
 

@@ -42,9 +42,11 @@ namespace OnlineCourse
             builder.ApplyConfiguration(new StudentConfig());
             builder.ApplyConfiguration(new UserConfig());
             builder.ApplyConfiguration(new CourseLevelConfig());
+            builder.ApplyConfiguration(new RoleConfig());
+            builder.ApplyConfiguration(new RoleClaimConfig());
 
             // Global DeletedAt filter
-            foreach(var entityType in builder.Model.GetEntityTypes())
+            foreach (var entityType in builder.Model.GetEntityTypes())
             {
                 if (entityType.ClrType.IsAssignableFrom(typeof(IAuditableEntity))
                     && typeof(User) != entityType.ClrType
