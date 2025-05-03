@@ -1,8 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using OnlineCourse.Dtos;
-using OnlineCourse.Exceptions;
 using OnlineCourse.Extensions.Logging;
+using OnlineCourse.Primitives;
 using OnlineCourse.Services.IServices;
+using OnlineCourse.Web;
 
 namespace OnlineCourse.Controllers
 {
@@ -30,26 +31,14 @@ namespace OnlineCourse.Controllers
             [FromBody] InstructorCreationDto instructorCreation,
             CancellationToken ct)
         {
-            try
-            {
-                InstructorDto instructorDto = await _instructorService
-                    .CreateInstructorAsync(instructorCreation, ct);
-                return CreatedAtAction(nameof(InstructorGet), new { id = instructorDto.Id }, instructorDto);
-                
-            }
-            catch (UserCreationException uce)
-            {
-                _logger.LogUserCreationWarning(uce, nameof(InstructorCreate));
+            Result<InstructorDto> instructorDto = await _instructorService
+                .CreateInstructorAsync(instructorCreation, ct);
 
-                var problemDetails = new ProblemDetails
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    Title = uce.Title,
-                    Detail = uce.Message
-                };
-                problemDetails.Extensions.Add("identityErrors", uce.IdentityErrors);
-                return BadRequest(problemDetails);
+            if (!instructorDto.IsSucces)
+            {
+                return this.HandleServiceError(instructorDto.Error!, _logger, nameof(InstructorCreate));
             }
+            return CreatedAtAction(nameof(InstructorGet), new { id = instructorDto.Data?.Id }, instructorDto.Data);
         }
 
         /// <summary>

@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using OnlineCourse.Data.Constants;
 using OnlineCourse.Dtos;
 using OnlineCourse.Entities;
-using OnlineCourse.Exceptions;
+using OnlineCourse.Primitives;
 using OnlineCourse.Services.IServices;
 using OnlineCourse.UnitOfWork;
 
@@ -16,37 +16,37 @@ namespace OnlineCourse.Services
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly UserManager<User> _userManager = userManager;
 
-        public async Task<InstructorDto> CreateInstructorAsync(
+        public async Task<Result<InstructorDto>> CreateInstructorAsync(
             InstructorCreationDto instructorCreationDto,
             CancellationToken ct = default) 
         {
             await using var transaction = await _unitOfWork.BeginTransactionAsync(ct);
-            try
+            
+            var userMapped = _mapper.Map<User>(instructorCreationDto);
+            var userResult = await _userManager.CreateAsync(userMapped, instructorCreationDto.Password);
+            if (!userResult.Succeeded)
             {
-                var userMapped = _mapper.Map<User>(instructorCreationDto);
-                var userResult = await _userManager.CreateAsync(userMapped, instructorCreationDto.Password);
-                if (!userResult.Succeeded)
-                {
-                    string errorTitle = "Error al crear el usuario.";
-                    throw new UserCreationException(userResult.Errors, errorTitle);
-                }
-                
-                var roleResult = await _userManager.AddToRoleAsync(userMapped, AppRoles.Instructor);
-                
-                var instructorMapped = _mapper.Map<Instructor>(instructorCreationDto);
-                instructorMapped.User = userMapped;
-
-                await _unitOfWork.Instructors.AddAsync(instructorMapped, ct);
-                await _unitOfWork.CompleteAsync(ct);
-                await transaction.CommitAsync(ct);
-
-                return _mapper.Map<InstructorDto>(instructorMapped);
+                transaction.Rollback();
+                return Result<InstructorDto>.Failure(new UserIdentityErrorWrapper(
+                    identityErrors: userResult.Errors));
             }
-            catch (Exception) 
+                
+            var roleResult = await _userManager.AddToRoleAsync(userMapped, AppRoles.Instructor);
+            if (!roleResult.Succeeded)
             {
-                await transaction.RollbackAsync(ct);
-                throw;
+                transaction.Rollback();
+                return Result<InstructorDto>.Failure(new RoleIdentityErrorWrapper(
+                    identityErrors: roleResult.Errors));
             }
+                
+            var instructorMapped = _mapper.Map<Instructor>(instructorCreationDto);
+            instructorMapped.User = userMapped;
+
+            await _unitOfWork.Instructors.AddAsync(instructorMapped, ct);
+            await _unitOfWork.CompleteAsync(ct);
+            await transaction.CommitAsync(ct);
+
+            return Result<InstructorDto>.Success(_mapper.Map<InstructorDto>(instructorMapped));
         }
         public async Task<InstructorDto?> GetInstructorByIdAsync(
             Guid id, 
