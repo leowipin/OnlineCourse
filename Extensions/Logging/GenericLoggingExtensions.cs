@@ -10,7 +10,7 @@ public static class GenericLoggingExtensions
         string? endpointInfo = null
         )
     {
-        const string template = "Error inesperado en servicio [{Endpoint}]: {Title} - {Detail}.";
+        const string template = "[{Endpoint}]: {Title} - {Detail}.";
         logger.LogWarning(
             message: template,
             endpointInfo ?? "N/A",

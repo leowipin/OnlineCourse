@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using OnlineCourse.Dtos;
 using OnlineCourse.Entities;
 using OnlineCourse.Repositories.IRepositories;
 
@@ -15,10 +16,18 @@ namespace OnlineCourse.Repositories
         {
             await _context.SaveChangesAsync(ct);
         }
-        public async Task<Instructor?> GetByIdAsync(Guid id, CancellationToken ct = default)
+        public async Task<InstructorDto?> GetByIdAsync(Guid id, CancellationToken ct = default)
         {
             return await _context.Instructors
-                .FirstOrDefaultAsync(i => i.Id == id, ct);
+                .Where(i =>i.Id == id)
+                .Select(i => new InstructorDto
+                {
+                    Id = i.Id,
+                    Email = i.User.Email!,
+                    Biography = i.Biography,
+                    WebSiteUrl = i.WebSiteUrl
+                })
+                .FirstOrDefaultAsync(ct);
         }
     }
 }

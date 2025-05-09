@@ -48,13 +48,18 @@ namespace OnlineCourse.Services
 
             return Result<InstructorDto>.Success(_mapper.Map<InstructorDto>(instructorMapped));
         }
-        public async Task<InstructorDto?> GetInstructorByIdAsync(
+        public async Task<Result<InstructorDto>> GetInstructorByIdAsync(
             Guid id, 
             CancellationToken ct = default)
         {
-            var instructor = await _unitOfWork.Instructors.GetByIdAsync(id, ct);
-            if (instructor == null) return null;
-            return _mapper.Map<InstructorDto>(instructor);
+            var instructorDto = await _unitOfWork.Instructors.GetByIdAsync(id, ct);
+            if (instructorDto == null)
+            {
+                return Result<InstructorDto>.Failure(new NotFoundError(
+                    resourceName: nameof(Instructor),
+                    id: id));
+            }
+            return Result<InstructorDto>.Success(instructorDto);
         }
     }
 }   
