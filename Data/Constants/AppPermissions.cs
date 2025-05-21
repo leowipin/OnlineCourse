@@ -45,4 +45,10 @@ public static class AppPermissions
         public const string ManageOwnCourse = "Permissions.CourseContent.ManageOwnCourse";
         public const string ManageAll = "Permissions.CourseContent.ManageAll";
     }
+
+    public static class Instructors
+    {
+        public const string View = "Permissions.Instructors.View";
+        // Add other instructor-specific permissions here if needed in the future (e.g., Manage, Create, etc.)
+    }
 }

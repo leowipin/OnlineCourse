@@ -24,14 +24,11 @@ namespace OnlineCourse.Controllers
             [FromBody] InstructorCreationDto instructorCreation,
             CancellationToken ct)
         {
-            Result<InstructorDto> instructorDto = await _instructorService
-                .CreateInstructorAsync(instructorCreation, ct);
-
-            if (!instructorDto.IsSucces)
-            {
-                return this.HandleServiceError(instructorDto.Error!, _logger, nameof(InstructorCreate));
-            }
-            return CreatedAtAction(nameof(InstructorGet), new { id = instructorDto.Data!.Id }, instructorDto.Data);
+            var result = await _instructorService.CreateInstructorAsync(instructorCreation, ct);
+            return result.Match(
+                data => CreatedAtAction(nameof(InstructorGet), new { id = data.Id }, data),
+                error => this.HandleServiceError(error, _logger, nameof(InstructorCreate))
+            );
         }
 
         /// <summary>
@@ -43,12 +40,11 @@ namespace OnlineCourse.Controllers
         [ProducesResponseType<ProblemDetails>(StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<InstructorDto>> InstructorGet(Guid id, CancellationToken ct)
         {
-            var instructorDto = await _instructorService.GetInstructorByIdAsync(id, ct);
-            if (!instructorDto.IsSucces)
-            {
-                return this.HandleServiceError(instructorDto.Error!, _logger, nameof(InstructorGet));
-            }
-            return Ok(instructorDto.Data);
+            var result = await _instructorService.GetInstructorByIdAsync(id, ct);
+            return result.Match(
+                data => Ok(data),
+                error => this.HandleServiceError(error, _logger, nameof(InstructorGet))
+            );
         }
     }
 }

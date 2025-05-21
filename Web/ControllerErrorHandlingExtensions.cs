@@ -38,6 +38,36 @@ public static class ControllerErrorHandlingExtensions
                 roleProblemDetails.Extensions.Add("identityErrors", roleWrapper.IdentityErrors);
                 return controller.BadRequest(roleProblemDetails);
             // -----------------------
+            case InvalidCredentialsError invalidCredentialsError:
+                logger.LogGenericServiceError(invalidCredentialsError, endpointInfo);
+                var invalidCredProblemDetails = CreateProblemDetails(
+                    StatusCodes.Status401Unauthorized, // Or 400 BadRequest depending on desired behavior
+                    invalidCredentialsError.Title,
+                    invalidCredentialsError.Detail,
+                    instace
+                );
+                return controller.Unauthorized(invalidCredProblemDetails);
+
+            case AccountLockedOutError accountLockedOutError:
+                logger.LogGenericServiceError(accountLockedOutError, endpointInfo);
+                var lockedOutProblemDetails = CreateProblemDetails(
+                    StatusCodes.Status400BadRequest, // Or 403 Forbidden if more appropriate
+                    accountLockedOutError.Title,
+                    accountLockedOutError.Detail,
+                    instace
+                );
+                return controller.BadRequest(lockedOutProblemDetails);
+
+            case EmailNotConfirmedError emailNotConfirmedError:
+                logger.LogGenericServiceError(emailNotConfirmedError, endpointInfo);
+                var emailNotConfirmedProblemDetails = CreateProblemDetails(
+                    StatusCodes.Status400BadRequest,
+                    emailNotConfirmedError.Title,
+                    emailNotConfirmedError.Detail,
+                    instace
+                );
+                return controller.BadRequest(emailNotConfirmedProblemDetails);
+
             case NotFoundError notFoundError:
                 logger.LogGenericServiceError(notFoundError, endpointInfo);
                 var notFoundProblemDetails = CreateProblemDetails(

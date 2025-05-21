@@ -10,7 +10,8 @@ namespace OnlineCourse.Entities
         public DateTime? UpdatedAt { get; set; }
         public DateTime? DeletedAt { get; set; }
         // nav properties
-        public Student? Student { get; set; } = null!;
-        public Instructor? Instructor { get; set; } = null!;
+        public Student? Student { get; set; }
+        public Instructor? Instructor { get; set; }
+        public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
     }
 }
