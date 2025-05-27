@@ -14,11 +14,14 @@ public class RefreshTokenConfiguration(IConfiguration configuration) : IEntityTy
         // Indexes
         builder.HasIndex(rt=>rt.Token).IsUnique();
         // Properties
-        builder.Property(rt => rt.CreationDate).HasDefaultValueSql("GETUTCDATE()");
+        builder.Property(rt => rt.CreationDate)
+            .HasDefaultValueSql("GETUTCDATE()")
+            .ValueGeneratedOnAdd();
         builder.Property(rt => rt.IsUsed).HasDefaultValue(false);
         int refreshTokenExpiryDays = _configuration.GetSection("JwtSettings").GetValue("RefreshTokenExpiryDays", 7);
         builder.Property(rt => rt.ExpiryDate)
-            .HasDefaultValueSql($"DATEADD(day, {refreshTokenExpiryDays}, GETUTCDATE())");
-        
+            .HasDefaultValueSql($"DATEADD(day, {refreshTokenExpiryDays}, GETUTCDATE())")
+            .ValueGeneratedOnAdd();
+
     }
 }

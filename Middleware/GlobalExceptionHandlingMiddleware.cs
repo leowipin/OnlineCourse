@@ -1,6 +1,8 @@
-using Microsoft.AspNetCore.Mvc;
+using System;
 using System.Net;
 using System.Text.Json;
+using Microsoft.AspNetCore.Mvc;
+using OnlineCourse.Exceptions;
 
 namespace OnlineCourse.Middleware;
 
@@ -19,32 +21,55 @@ public class ExceptionHandlingMiddleware(
         {
             await _next(context);
         }
-
+        catch (ApiException apiEx)
+        {
+            _logger.Log(
+                logLevel:LogLevel.Error,
+                message: "[{Endpoint}]: {Title} - {Detail} - {Code}.",
+                context.Request.Path,
+                apiEx.ErrorTitle,
+                apiEx.Message,
+                apiEx.ErrorCode
+             );
+            await HandleApiExceptionAsync(context, apiEx);
+        }
         catch (Exception ex)
         {
-            // Registra la excepción no controlada
             _logger.LogError(ex, "Ocurrió una excepción no controlada para la solicitud {Method}, {Path}",
                              context.Request.Method, context.Request.Path);
 
-            // Prepara la respuesta de error
-            await HandleExceptionAsync(context, ex);
+            await HandleGenericExceptionAsync(context, ex);
         }
     }
 
-    private async Task HandleExceptionAsync(HttpContext context, Exception exception)
+    private async Task HandleApiExceptionAsync(HttpContext context, ApiException aex)
     {
-        context.Response.ContentType = "application/problem+json"; // Usar el tipo de contenido para ProblemDetails
+        context.Response.ContentType = "application/problem+json";
+        context.Response.StatusCode = aex.ErrorStatus;
+        var problemDetails = new ProblemDetails
+        {
+            Status = aex.ErrorStatus,
+            Title = aex.ErrorTitle,
+            Detail = aex.Message,
+            Extensions = { ["code"] = aex.ErrorCode }
+        };
+        var jsonResponse = JsonSerializer.Serialize(problemDetails);
+        await context.Response.WriteAsync(jsonResponse);
+    }
+
+    private async Task HandleGenericExceptionAsync(HttpContext context, Exception exception)
+    {
+        context.Response.ContentType = "application/problem+json";
         context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
 
-        // Crear un objeto ProblemDetails para una respuesta de error estandarizada
         var problemDetails = new ProblemDetails
         {
             Status = StatusCodes.Status500InternalServerError,
-            Title = "Error interno del servidor.",
-            // Incluir más detalles solo en desarrollo por seguridad
+            Title = "Unexpected Server Error Occurred",
             Detail = _env.IsDevelopment()
-                ? $"Ocurrió un error inesperado: {exception.Message}" // Mensaje detallado en desarrollo
-                : "Ocurrió un error inesperado. Por favor, intenta nuevamente más tarde." // Mensaje genérico en producción
+                ? $"An unexpected error occurred on the server: {exception.Message}"
+                : "An unexpected error occurred while processing your request. Please try again later or contact support if the problem persists.",
+            Extensions = { ["code"] = "INTERNAL_SERVER_ERROR" }
         };
 
         if (_env.IsDevelopment())
@@ -56,7 +81,6 @@ public class ExceptionHandlingMiddleware(
             }
         }
 
-        // Serializar ProblemDetails a JSON y escribirlo en la respuesta
         var jsonResponse = JsonSerializer.Serialize(problemDetails);
         await context.Response.WriteAsync(jsonResponse);
     }

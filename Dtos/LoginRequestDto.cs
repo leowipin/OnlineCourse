@@ -2,10 +2,9 @@ using System.ComponentModel.DataAnnotations;
 
 namespace OnlineCourse.Dtos;
 
-public class LoginRequestDto
+public record LoginRequestDto
 {
     [EmailAddress]
-    public required string Email { get; set; }
-
-    public required string Password { get; set; }
+    public required string Email { get; init; }
+    public required string Password { get; init; }
 }

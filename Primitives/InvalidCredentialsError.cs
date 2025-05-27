@@ -1,5 +1,7 @@
 namespace OnlineCourse.Primitives;
 
-public class InvalidCredentialsError() : Error(
-    title: "Authentication.InvalidCredentials",
-    detail: "The email or password provided is incorrect.");
+public class InvalidCredentialsError(string email) : Error(
+    code: "AUTH_INVALID_CREDENTIALS",
+    title: "Invalid Email or Password Provided",
+    detail: $"The credentials provided for email '{email}' are incorrect.")
+{ }

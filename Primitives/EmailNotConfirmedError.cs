@@ -1,5 +1,7 @@
 namespace OnlineCourse.Primitives;
 
-public class EmailNotConfirmedError() : Error(
-    title: "Authentication.EmailNotConfirmed",
-    detail: "The email for this account has not been confirmed. Please check your inbox.");
+public class EmailNotConfirmedError(string email) : Error(
+    code: "AUTH_EMAIL_NOT_CONFIRMED",
+    title: "Email Address Not Confirmed",
+    detail: $"The email address '{email}' associated with this account has not been confirmed.")
+{ }

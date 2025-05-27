@@ -2,12 +2,12 @@ namespace OnlineCourse.Primitives;
 
 public class Result<T>
 {
-    public bool IsSucces { get; }
+    public bool IsSuccess { get; }
     public T? Data { get; }
     public Error? Error { get; }
     private Result(bool isSucces, T? data, Error? error) 
     { 
-        IsSucces = isSucces;
+        IsSuccess = isSucces;
         Data = data;
         Error = error;
     }
@@ -17,7 +17,7 @@ public class Result<T>
 
     public TResult Match<TResult>(Func<T, TResult> onSuccess, Func<Error, TResult> onFailure)
     {
-        if (IsSucces)
+        if (IsSuccess)
         {
             // Data will not be null if IsSucces is true due to constructor logic
             return onSuccess(Data!);

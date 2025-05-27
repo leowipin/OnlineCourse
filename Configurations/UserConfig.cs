@@ -8,8 +8,6 @@ namespace OnlineCourse.Configurations
     {
         public void Configure(EntityTypeBuilder<User> builder)
         {
-            // Indexes
-            builder.HasIndex(x => x.Email).IsUnique();
             // Properties
             builder.Property(x => x.Email).IsRequired();
             // Relations

@@ -1,9 +1,7 @@
 namespace OnlineCourse.Primitives;
 
-public class NotFoundError (string resourceName, Guid id): Error(
-    title:"Recurso no encontrado", 
-    detail:$"El recurso '{resourceName}' con ID '{id}' no fue encontrado.")
-{
-    public string Resource { get; } = resourceName; 
-    public Guid Id { get; } = id;
-}
+public class NotFoundError(string resourceName, Guid id) : Error(
+    code: "RESOURCE_NOT_FOUND",
+    title: "Resource Not Found",
+    detail: $"The resource '{resourceName}' with ID '{id}' could not be found.")
+{}

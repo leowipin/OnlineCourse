@@ -33,7 +33,7 @@ namespace OnlineCourse.Filters
             {
                 // Not authenticated, standard [Authorize] attribute will handle it or it's an anomaly.
                 // This filter is primarily for an *already authenticated* user's security stamp.
-                return; 
+                return;
             }
 
             var userIdString = userPrincipal.FindFirstValue(ClaimTypes.NameIdentifier); // 'sub' claim
@@ -44,7 +44,7 @@ namespace OnlineCourse.Filters
             }
 
             var user = await _userManager.FindByIdAsync(userIdString);
-            if (user == null)
+            if (user is null)
             {
                 context.Result = new UnauthorizedResult(); // User not found
                 return;
@@ -54,7 +54,7 @@ namespace OnlineCourse.Filters
             if (string.IsNullOrEmpty(tokenSecurityStamp))
             {
                 // 'ss' claim is missing. This could be an old token or a misconfiguration.
-                context.Result = new UnauthorizedResult(); 
+                context.Result = new UnauthorizedResult();
                 return;
             }
 
@@ -63,18 +63,18 @@ namespace OnlineCourse.Filters
                 // Security stamps do not match. Invalidate the request.
                 context.Result = new UnauthorizedResult();
 
-                // Revoke all active refresh tokens for this user
+                // Elimina todos los refresh tokens activos de este usuario
                 if (Guid.TryParse(userIdString, out Guid parsedUserId))
                 {
                     var userRefreshTokens = await _dbContext.RefreshTokens
-                        .Where(rt => rt.UserId == parsedUserId && !rt.IsUsed && !rt.IsRevoked && rt.ExpiryDate > DateTime.UtcNow)
+                        .Where(rt => rt.UserId == parsedUserId && !rt.IsUsed && rt.ExpiryDate > DateTime.UtcNow)
                         .ToListAsync();
 
-                    foreach (var rt in userRefreshTokens)
+                    if (userRefreshTokens.Count != 0)
                     {
-                        rt.IsRevoked = true;
+                        _dbContext.RefreshTokens.RemoveRange(userRefreshTokens);
+                        await _dbContext.SaveChangesAsync();
                     }
-                    await _dbContext.SaveChangesAsync();
                 }
             }
             // If stamps match, the request proceeds.

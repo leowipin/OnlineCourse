@@ -1,6 +1,6 @@
 namespace OnlineCourse.Dtos;
 
-public class RefreshTokenRequestDto
+public record RefreshTokenRequestDto
 {
-    public required string RefreshToken { get; set; }
+    public required string RefreshToken { get; init; }
 }

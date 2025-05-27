@@ -1,8 +1,8 @@
 namespace OnlineCourse.Dtos;
 
-public class LoginResponseDto
+public record LoginResponseDto
 {
-    public required string Token { get; set; }
-    public required string Email { get; set; }
-    public required string RefreshToken { get; set; }
+    public required string Token { get; init; }
+    public required string Email { get; init; }
+    public required string RefreshToken { get; init; }
 }

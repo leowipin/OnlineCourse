@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using OnlineCourse.Data.Constants;
 using OnlineCourse.Dtos;
 using OnlineCourse.Entities;
+using OnlineCourse.Extensions.Logging;
 using OnlineCourse.Primitives;
 using OnlineCourse.Services.IServices;
 using OnlineCourse.UnitOfWork;
@@ -10,54 +11,55 @@ using OnlineCourse.UnitOfWork;
 namespace OnlineCourse.Services
 {
     public class InstructorService(IMapper mapper, UserManager<User> userManager,
-        IUnitOfWork unitOfWork) : IInstructorService
+        IUnitOfWork unitOfWork, ILogger<InstructorService> logger) : IInstructorService
     {
-        private readonly IMapper _mapper = mapper;
-        private readonly IUnitOfWork _unitOfWork = unitOfWork;
-        private readonly UserManager<User> _userManager = userManager;
-
         public async Task<Result<InstructorDto>> CreateInstructorAsync(
             InstructorCreationDto instructorCreationDto,
+            string? endpointInfo = null,
             CancellationToken ct = default) 
         {
-            await using var transaction = await _unitOfWork.BeginTransactionAsync(ct);
+            await using var transaction = await unitOfWork.BeginTransactionAsync(ct);
             
-            var userMapped = _mapper.Map<User>(instructorCreationDto);
-            var userResult = await _userManager.CreateAsync(userMapped, instructorCreationDto.Password);
+            var userMapped = mapper.Map<User>(instructorCreationDto);
+            var userResult = await userManager.CreateAsync(userMapped, instructorCreationDto.Password);
             if (!userResult.Succeeded)
             {
                 transaction.Rollback();
-                return Result<InstructorDto>.Failure(new UserIdentityErrorWrapper(
-                    identityErrors: userResult.Errors));
+                var userIdentityError = new UserIdentityErrorWrapper(identityErrors: userResult.Errors);
+                logger.LogServiceEvent(userIdentityError, LogLevel.Information, endpointInfo);
+                return Result<InstructorDto>.Failure(userIdentityError);
             }
                 
-            var roleResult = await _userManager.AddToRoleAsync(userMapped, AppRoles.Instructor);
+            var roleResult = await userManager.AddToRoleAsync(userMapped, AppRoles.Instructor);
             if (!roleResult.Succeeded)
             {
                 transaction.Rollback();
-                return Result<InstructorDto>.Failure(new RoleIdentityErrorWrapper(
-                    identityErrors: roleResult.Errors));
+                var roleAssignError = new RoleIdentityErrorWrapper(
+                    identityErrors: roleResult.Errors, AppRoles.Instructor);
+                logger.LogServiceEvent(roleAssignError, LogLevel.Error, endpointInfo);
+                return Result<InstructorDto>.Failure(roleAssignError);
             }
                 
-            var instructorMapped = _mapper.Map<Instructor>(instructorCreationDto);
+            var instructorMapped = mapper.Map<Instructor>(instructorCreationDto);
             instructorMapped.User = userMapped;
 
-            await _unitOfWork.Instructors.AddAsync(instructorMapped, ct);
-            await _unitOfWork.CompleteAsync(ct);
+            await unitOfWork.Instructors.AddAsync(instructorMapped, ct);
+            await unitOfWork.CompleteAsync(ct);
             await transaction.CommitAsync(ct);
 
-            return Result<InstructorDto>.Success(_mapper.Map<InstructorDto>(instructorMapped));
+            return Result<InstructorDto>.Success(mapper.Map<InstructorDto>(instructorMapped));
         }
         public async Task<Result<InstructorDto>> GetInstructorByIdAsync(
-            Guid id, 
+            Guid id,
+            string? endpointInfo = null,
             CancellationToken ct = default)
         {
-            var instructorDto = await _unitOfWork.Instructors.GetByIdAsync(id, ct);
-            if (instructorDto == null)
+            var instructorDto = await unitOfWork.Instructors.GetByIdAsync(id, ct);
+            if (instructorDto is null)
             {
-                return Result<InstructorDto>.Failure(new NotFoundError(
-                    resourceName: nameof(Instructor),
-                    id: id));
+                var notFoundError = new NotFoundError(resourceName: nameof(Instructor), id: id);
+                logger.LogServiceEvent(notFoundError, LogLevel.Error, endpointInfo);
+                return Result<InstructorDto>.Failure(notFoundError);
             }
             return Result<InstructorDto>.Success(instructorDto);
         }

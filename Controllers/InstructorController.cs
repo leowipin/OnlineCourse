@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using OnlineCourse.Dtos;
-using OnlineCourse.Primitives;
 using OnlineCourse.Services.IServices;
 using OnlineCourse.Web;
 
@@ -8,11 +7,8 @@ namespace OnlineCourse.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class InstructorController(IInstructorService instructorService, ILogger<InstructorController> logger) : ControllerBase
+    public class InstructorController(IInstructorService instructorService) : ControllerBase
     {
-        private readonly IInstructorService _instructorService = instructorService;
-        private readonly ILogger<InstructorController> _logger = logger;
-
         /// <summary>
         /// Crea un nuevo instructor.
         /// </summary>
@@ -24,10 +20,13 @@ namespace OnlineCourse.Controllers
             [FromBody] InstructorCreationDto instructorCreation,
             CancellationToken ct)
         {
-            var result = await _instructorService.CreateInstructorAsync(instructorCreation, ct);
+            var result = await instructorService.CreateInstructorAsync(
+                instructorCreation,
+                nameof(InstructorCreate),
+                ct);
             return result.Match(
                 data => CreatedAtAction(nameof(InstructorGet), new { id = data.Id }, data),
-                error => this.HandleServiceError(error, _logger, nameof(InstructorCreate))
+                error => this.HandleServiceError(error)
             );
         }
 
@@ -40,10 +39,10 @@ namespace OnlineCourse.Controllers
         [ProducesResponseType<ProblemDetails>(StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<InstructorDto>> InstructorGet(Guid id, CancellationToken ct)
         {
-            var result = await _instructorService.GetInstructorByIdAsync(id, ct);
+            var result = await instructorService.GetInstructorByIdAsync(id, nameof(InstructorGet), ct);
             return result.Match(
                 data => Ok(data),
-                error => this.HandleServiceError(error, _logger, nameof(InstructorGet))
+                error => this.HandleServiceError(error)
             );
         }
     }

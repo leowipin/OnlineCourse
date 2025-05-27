@@ -10,8 +10,12 @@ namespace OnlineCourse
 {
     public class ApplicationDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
     {
-        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) :base(options) { }
-        
+        private readonly IConfiguration _configuration;
+        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options,
+            IConfiguration configuration) :base(options) 
+        {
+            _configuration = configuration;
+        }
         public DbSet<Student> Students { get; set; }
         public DbSet<Instructor> Instructors { get; set; }
         public DbSet<Course> Courses { get; set; }
@@ -45,6 +49,7 @@ namespace OnlineCourse
             builder.ApplyConfiguration(new CourseLevelConfig());
             builder.ApplyConfiguration(new RoleConfig());
             builder.ApplyConfiguration(new RoleClaimConfig());
+            builder.ApplyConfiguration(new RefreshTokenConfiguration(_configuration));
 
             // Global DeletedAt filter
             foreach (var entityType in builder.Model.GetEntityTypes())

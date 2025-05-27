@@ -21,7 +21,7 @@ using SwaggerThemes;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configuraci n de Serilog 
+// Serilog configurations
 builder.Host.UseSerilog((context, services, loggerConfiguration) => loggerConfiguration
     .ReadFrom.Configuration(context.Configuration)
 );
@@ -74,6 +74,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options => options
 
 builder.Services.AddIdentity<User, IdentityRole<Guid>>(options =>
 {
+    options.User.RequireUniqueEmail = true;
     options.Password.RequiredLength = 8;
 })
 .AddEntityFrameworkStores<ApplicationDbContext>()

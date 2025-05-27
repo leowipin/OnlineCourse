@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace OnlineCourse.Dtos
 {
-    public class InstructorCreationDto
+    public record InstructorCreationDto
     {
         [EmailAddress]
         public required string Email { get; init; }
