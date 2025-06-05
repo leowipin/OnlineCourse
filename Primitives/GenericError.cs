@@ -1,6 +1,5 @@
 namespace OnlineCourse.Primitives;
 
-public class GenericError : Error
-{
-    public GenericError(string code, string title, string detail) : base(code, title, detail) { }
-}
+public class GenericError(int statusCode, string code, string title, string detail) : 
+    Error(statusCode, code, title, detail)
+{}

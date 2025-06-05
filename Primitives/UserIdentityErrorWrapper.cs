@@ -4,6 +4,7 @@ namespace OnlineCourse.Primitives;
 
 public class UserIdentityErrorWrapper(IEnumerable<IdentityError> identityErrors) :
     Error(
+        statusCode: StatusCodes.Status400BadRequest,
         code: "USER_CREATION_FAILED",
         title: "User Creation Validation Failure",
         detail: "User creation failed due to validation errors in the provided user data.")

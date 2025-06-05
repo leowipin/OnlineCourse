@@ -51,14 +51,15 @@ public class AuthService(UserManager<User> userManager,
 
         var signInResult = await signInManager.CheckPasswordSignInAsync(user, loginRequest.Password, lockoutOnFailure: true);
 
+        if (signInResult.IsLockedOut)
+        {
+            var accountLockedOutError = new AccountLockedOutError(user.Id);
+            logger.LogServiceEvent(accountLockedOutError, LogLevel.Information, endpointInfo);
+            return Result<LoginResponseDto>.Failure(accountLockedOutError);
+        }
+
         if (!signInResult.Succeeded)
         {
-            if (signInResult.IsLockedOut)
-            {
-                var accountLockedOutError = new AccountLockedOutError(user.Id);
-                logger.LogServiceEvent(accountLockedOutError, LogLevel.Information, endpointInfo);
-                return Result<LoginResponseDto>.Failure(accountLockedOutError);
-            }
             var invalidCredentialError = new InvalidCredentialsError(user.Email!);
             logger.LogServiceEvent(invalidCredentialError, LogLevel.Information, endpointInfo);
             return Result<LoginResponseDto>.Failure(invalidCredentialError);
@@ -102,7 +103,7 @@ public class AuthService(UserManager<User> userManager,
         var userRoleNames = await userManager.GetRolesAsync(user);
         claims.AddRange(userRoleNames.Select(userRoleName => new Claim(ClaimTypes.Role, userRoleName)));
 
-        if (userRoleNames.Any())
+        if (!userRoleNames.Any())
         {
             throw new ApiException(
                 errorCode: "AUTH_USER_MISSING_ROLES",
@@ -187,38 +188,48 @@ public class AuthService(UserManager<User> userManager,
         string? endpointInfo = null,
         CancellationToken ct = default)
     {
-        // 1. Validate the incoming refresh token
         var existingRefreshToken = await context.RefreshTokens
             .Include(rt => rt.User)
-            .FirstOrDefaultAsync(rt => rt.Token == refreshTokenRequest.RefreshToken);
+            .Where(rt => rt.Token == refreshTokenRequest.RefreshToken)
+            .FirstOrDefaultAsync(ct);
 
         if (existingRefreshToken is null)
         {
-            return Result<LoginResponseDto>.Failure(new InvalidTokenError());
+            var invalidRToken = new InvalidRefreshTokenError();
+            logger.LogServiceEvent(invalidRToken, LogLevel.Warning, endpointInfo);
+            return Result<LoginResponseDto>.Failure(invalidRToken);
         }
 
         if (existingRefreshToken.ExpiryDate < DateTime.UtcNow)
         {
-            return Result<LoginResponseDto>.Failure(new InvalidTokenError());
+            var invalidRToken = new InvalidRefreshTokenError();
+            logger.LogServiceEvent(invalidRToken, LogLevel.Information, endpointInfo);
+            return Result<LoginResponseDto>.Failure(new InvalidRefreshTokenError());
         }
 
         if (existingRefreshToken.IsUsed)
         {
             var userTokens = await context.RefreshTokens
                 .Where(rt => rt.UserId == existingRefreshToken.UserId)
-                .ExecuteDeleteAsync();
+                .ExecuteDeleteAsync(ct);
 
-            var invalidTokenError = new InvalidTokenError();
-            logger.LogServiceEvent(invalidTokenError, LogLevel.Warning);
+            var reusedRTokenError = new ReusedRefreshTokenError();
+            logger.LogServiceEvent(reusedRTokenError, LogLevel.Warning, endpointInfo);
 
-            return Result<LoginResponseDto>.Failure(invalidTokenError);
+            return Result<LoginResponseDto>.Failure(reusedRTokenError);
         }
 
-        var user = existingRefreshToken.User;
-        if (user is null) // Should not happen if DB constraints are correct, but good to check
+        var accesTokenValidations = ValidateExpiredAccessToken(
+            refreshTokenRequest.ExpiredAccesToken,
+            existingRefreshToken.JwtId,            
+            endpointInfo);
+
+        if (!accesTokenValidations.IsSuccess)
         {
-            return Result<LoginResponseDto>.Failure(new InvalidTokenError());
+            return Result<LoginResponseDto>.Failure(accesTokenValidations.Error!);
         }
+
+        //VALIDATE JTI 12:57 31/5
 
         // Optional: Security Stamp check against the user. 
         // While the SecurityStampValidationFilter protects endpoints, an extra check here ensures that 
@@ -226,32 +237,28 @@ public class AuthService(UserManager<User> userManager,
         // we don't issue new tokens. This is belt-and-suspenders.
         // This step might be complex if the original access token's JTI was used to find the user's original security stamp.
         // For now, we rely on the current user's stamp.
-
+        var user = existingRefreshToken.User;
         // 2. Mark the used refresh token as IsUsed = true
         existingRefreshToken.IsUsed = true;
-        // dbContext.RefreshTokens.Update(existingRefreshToken); // EF Core tracks changes, explicit Update often not needed
 
         // 3. Generate new access token
-        var (newJwtSecurityToken, newAccessTokenString) = await GenerateJwtToken(user);
+        var (newJwtSecurityToken, newAccessTokenString) = await GenerateJwtToken(
+            user, ct);
 
         // 4. Generate new refresh token
         var newRefreshTokenValue = GenerateRefreshTokenString();
         var refreshTokenExpiryMinutes = configuration.GetValue<double?>("JwtSettings:RefreshTokenExpiryMinutes") ?? 10080;
 
-        var newRefreshTokenEntity = new RefreshToken // Assuming RefreshTokenEntity.cs
+        var newRefreshTokenEntity = new RefreshToken
         {
             Token = newRefreshTokenValue,
-            JwtId = newJwtSecurityToken.Id, // JTI of the new access token
+            JwtId = newJwtSecurityToken.Id,
             UserId = user.Id,
-            //CreationDate = DateTime.UtcNow,
-            //ExpiryDate = DateTime.UtcNow.AddMinutes(refreshTokenExpiryMinutes),
-            //IsUsed = false,
         };
 
-        await context.RefreshTokens.AddAsync(newRefreshTokenEntity);
-        await context.SaveChangesAsync(); // This will save changes to existingRefreshToken (IsUsed) and add newRefreshTokenEntity
+        await context.RefreshTokens.AddAsync(newRefreshTokenEntity, ct);
+        await context.SaveChangesAsync(ct);
 
-        // 5. Return new tokens
         var loginResponse = new LoginResponseDto
         {
             Token = newAccessTokenString,
@@ -260,6 +267,63 @@ public class AuthService(UserManager<User> userManager,
         };
 
         return Result<LoginResponseDto>.Success(loginResponse);
+
+    }
+
+    private Result<bool> ValidateJti(string jtiExpiredToken, string jtiRefreshToken)
+    {
+        return Result<bool>.Success(true);
+    }
+
+    private Result<ClaimsPrincipal> ValidateExpiredAccessToken(
+        string expiredAccessToken,
+        string refreshTokenJid,        
+        string? endpointInfo = null)
+    {
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var jwtSettings = configuration.GetSection("JwtSettings");
+        var secretKey = Encoding.UTF8.GetBytes(jwtSettings["Secret"]!);
+
+        var tokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(secretKey),
+            ValidateIssuer = true,
+            ValidIssuer = jwtSettings["Issuer"],
+            ValidateAudience = true,
+            ValidAudience = jwtSettings["Audience"],
+            RequireExpirationTime = true,
+            ValidateLifetime = false,
+            ClockSkew = TimeSpan.Zero
+        };
+
+        try
+        {
+            var principal = tokenHandler.ValidateToken(expiredAccessToken, tokenValidationParameters, out SecurityToken validatedToken);
+            var expiredTokenJti = principal.FindFirst(JwtRegisteredClaimNames.Jti);
+
+            //continue comparing jti...
+
+            return Result<ClaimsPrincipal>.Success(principal);
+        }
+        
+        catch (SecurityTokenException ex)
+        {
+            var validationError = new InvalidAccesTokenError();
+            logger.LogServiceEvent(validationError, LogLevel.Warning, endpointInfo, ex);
+            return Result<ClaimsPrincipal>.Failure(validationError);
+        }   
+        catch (Exception ex)
+        {
+            var genericError = new GenericError(
+                statusCode: StatusCodes.Status401Unauthorized,
+                code: "AUTH_ACCESS_TOKEN_VALIDATION_UNEXPECTED_ERROR",
+                title: "Unexpected Error Validating Expired Access Token",
+                detail: "An unexpected internal error occurred during the validation of your access token."
+            );
+            logger?.LogServiceEvent(genericError, LogLevel.Error, endpointInfo, ex);
+            return Result<ClaimsPrincipal>.Failure(genericError);
+        }
     }
     //public async Task<Result<Success>> LogoutAsync(RefreshTokenRequestDto refreshTokenRequest)
     //{

@@ -10,7 +10,7 @@ public static class IndentityLoggingExtensions
         UserIdentityErrorWrapper userError,
         string? endpointInfo = null)
     {
-        const string logTemplate = "Problema en creación de usuario [{Endpoint}]: {Title} - {Detail}. " +
+        const string logTemplate = "[{Endpoint}]: {Title} - {Detail}. " +
             "IdentityErrors: {@IdentityErrors}";
 
         logger.LogInformation(
@@ -25,7 +25,7 @@ public static class IndentityLoggingExtensions
         RoleIdentityErrorWrapper roleError,
         string? endpointInfo = null)
     {
-        const string logTemplate = "Problema asignando rol [{Endpoint}]: {Title} - {Detail}. " +
+        const string logTemplate = "[{Endpoint}]: {Title} - {Detail}. " +
             "IdentityErrors: {@IdentityErrors}";
 
         logger.LogInformation(

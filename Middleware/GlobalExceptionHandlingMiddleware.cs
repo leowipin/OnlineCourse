@@ -42,7 +42,7 @@ public class ExceptionHandlingMiddleware(
         }
     }
 
-    private async Task HandleApiExceptionAsync(HttpContext context, ApiException aex)
+    private static async Task HandleApiExceptionAsync(HttpContext context, ApiException aex)
     {
         context.Response.ContentType = "application/problem+json";
         context.Response.StatusCode = aex.ErrorStatus;
@@ -51,7 +51,7 @@ public class ExceptionHandlingMiddleware(
             Status = aex.ErrorStatus,
             Title = aex.ErrorTitle,
             Detail = aex.Message,
-            Extensions = { ["code"] = aex.ErrorCode }
+            Extensions = { ["code"] = aex.ErrorCode },
         };
         var jsonResponse = JsonSerializer.Serialize(problemDetails);
         await context.Response.WriteAsync(jsonResponse);
